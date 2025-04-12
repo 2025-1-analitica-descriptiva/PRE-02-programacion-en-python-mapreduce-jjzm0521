@@ -6,6 +6,7 @@ import fileinput
 import glob
 import os.path
 import time
+import string
 from itertools import groupby
 
 
@@ -18,7 +19,14 @@ from itertools import groupby
 # text0_2.txt, etc.
 #
 def copy_raw_files_to_input_folder(n):
-    """Funcion copy_files"""
+    if not os.path.exists("files/input"):
+        os.makedirs("files/input") 
+
+    for file in glob.glob("files/raw/*"):
+        for i in range(1, n+1):
+            with open(file, "r", encoding="utf-8") as f:
+                 with open( f"files/input/{os.path.basename(file).split('.')[0]}_{i}.txt", "w", encoding="utf-8") as f2:
+                     f2.write(f.read())
 
 
 #
@@ -38,6 +46,12 @@ def copy_raw_files_to_input_folder(n):
 #
 def load_input(input_directory):
     """Funcion load_input"""
+    sequence=[]
+    files=glob.glob(f"{input_directory}/*")
+    with fileinput.input(files=files) as f:
+        for line in f:
+            sequence.append((fileinput.filename(), line))
+    return sequence    
 
 
 #
@@ -47,7 +61,11 @@ def load_input(input_directory):
 #
 def line_preprocessing(sequence):
     """Line Preprocessing"""
-
+    sequence = [
+        (key, value.translate(str.maketrans("","",string.punctuation)).lower())
+        for key, value in sequence
+    ]
+    return sequence
 
 #
 # Escriba una función llamada maper que recibe una lista de tuplas de la
@@ -63,7 +81,7 @@ def line_preprocessing(sequence):
 #
 def mapper(sequence):
     """Mapper"""
-
+    return [(word, 1) for _, value in sequence for word in value.split()]
 
 #
 # Escriba la función shuffle_and_sort que recibe la lista de tuplas entregada
@@ -78,7 +96,7 @@ def mapper(sequence):
 #
 def shuffle_and_sort(sequence):
     """Shuffle and Sort"""
-
+    return sorted(sequence, key= lambda x: x[0])
 
 #
 # Escriba la función reducer, la cual recibe el resultado de shuffle_and_sort y
@@ -88,7 +106,12 @@ def shuffle_and_sort(sequence):
 #
 def reducer(sequence):
     """Reducer"""
+    sequence_reduce=[]
 
+    for key, group in groupby(sequence, key=lambda x: x[0]):
+        total=sum(item[1] for item in group)
+        sequence_reduce.append((key, total))
+    return sequence_reduce
 
 #
 # Escriba la función create_ouptput_directory que recibe un nombre de
@@ -96,7 +119,8 @@ def reducer(sequence):
 #
 def create_ouptput_directory(output_directory):
     """Create Output Directory"""
-
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
 
 #
 # Escriba la función save_output, la cual almacena en un archivo de texto
@@ -108,21 +132,39 @@ def create_ouptput_directory(output_directory):
 #
 def save_output(output_directory, sequence):
     """Save Output"""
+    output_file = os.path.join(output_directory, "part-00000")
 
-
+    with open(output_file, "w", encoding="utf-8") as file:
+        for key, value in sequence:
+            file.write(f"{key}\t{value}\n")
+        return file
 #
 # La siguiente función crea un archivo llamado _SUCCESS en el directorio
 # entregado como parámetro.
 #
 def create_marker(output_directory):
     """Create Marker"""
-
+    marker_file = os.path.join(output_directory, "_SUCCESS")
+    with open(marker_file, "w", encoding="utf-8") as f:
+        f.write("")
 
 #
 # Escriba la función job, la cual orquesta las funciones anteriores.
 #
+
+
+
 def run_job(input_directory, output_directory):
     """Job"""
+    sequence = load_input(input_directory)
+    sequence = line_preprocessing(sequence)
+    sequence = mapper(sequence)
+    sequence = shuffle_and_sort(sequence)
+    sequence = reducer(sequence)
+    create_ouptput_directory(output_directory)
+    save_output(output_directory,sequence)
+    create_marker(output_directory)
+
 
 
 if __name__ == "__main__":
