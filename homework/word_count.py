@@ -19,6 +19,7 @@ from itertools import groupby
 # text0_2.txt, etc.
 #
 def copy_raw_files_to_input_folder(n):
+    #copy_raw_files_to_input_folder
     if not os.path.exists("files/input"):
         os.makedirs("files/input") 
 
